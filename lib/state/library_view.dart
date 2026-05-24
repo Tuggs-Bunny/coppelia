@@ -53,6 +53,9 @@ enum LibraryView {
 
   /// Playlist home shelf view.
   homePlaylists,
+
+  /// Last.fm track recommendations.
+  recommendations,
 }
 
 /// Display helpers for library views.
@@ -96,6 +99,8 @@ extension LibraryViewLabels on LibraryView {
         return 'Recently played';
       case LibraryView.homePlaylists:
         return 'Playlists';
+      case LibraryView.recommendations:
+        return 'Recommendations';
     }
   }
 
@@ -138,6 +143,8 @@ extension LibraryViewLabels on LibraryView {
         return 'Pick up where you left off.';
       case LibraryView.homePlaylists:
         return 'All your Jellyfin playlists.';
+      case LibraryView.recommendations:
+        return 'Tracks you might like, based on what you\'re listening to.';
     }
   }
 }

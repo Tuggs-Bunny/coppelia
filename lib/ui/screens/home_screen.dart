@@ -38,6 +38,7 @@ import '../widgets/sidebar_resize_handle.dart';
 import '../widgets/genre_detail_view.dart';
 import '../widgets/play_history_view.dart';
 import '../widgets/queue_view.dart';
+import '../widgets/recommendations_view.dart';
 import '../widgets/track_list_view.dart';
 import '../widgets/tracks_view.dart';
 import '../widgets/header_controls.dart';
@@ -367,6 +368,9 @@ class _LibraryContent extends StatelessWidget {
     }
     if (state.selectedView == LibraryView.settings) {
       return const SettingsView();
+    }
+    if (state.selectedView == LibraryView.recommendations) {
+      return const RecommendationsView();
     }
     return LibraryPlaceholderView(view: state.selectedView);
   }

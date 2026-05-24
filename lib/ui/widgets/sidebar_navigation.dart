@@ -203,6 +203,9 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
     final horizontalPadding = 20 * layoutDensity;
     final verticalPadding = 24 * layoutDensity;
     double space(double value) => value * layoutDensity;
+    final recommendationsVisible = context.select(
+      (AppState s) => s.isSidebarItemVisible(SidebarItem.recommendations),
+    );
     final showFavoritesSection = favoritesAlbumsVisible ||
         favoritesArtistsVisible ||
         favoritesTracksVisible;
@@ -312,6 +315,18 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
               ),
               SizedBox(height: space(8)),
             ],
+            if (recommendationsVisible) ...[
+              _NavTile(
+                icon: Icons.recommend,
+                label: 'Recommendations',
+                selected: selectedPlaylistId == null &&
+                    selectedView == LibraryView.recommendations,
+                onTap: () => _handleNavigate(
+                  () => appState.selectLibraryView(LibraryView.recommendations),
+                ),
+              ),
+              SizedBox(height: space(8)),
+            ],
             _ToggleTile(
               icon: Icons.cloud_off,
               label: 'Offline mode',
@@ -319,7 +334,7 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
               onChanged: (value) => appState.setOfflineMode(value),
             ),
           ],
-          SizedBox(height: space(20)),
+          SizedBox(height: space(8)),
           if (showFavoritesSection) ...[
             _SectionHeader(
               title: 'Favorites',

@@ -11,6 +11,7 @@ class TrackListSection extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
+    this.subtitleWidget,
     this.trailing,
     this.itemCount,
     this.itemBuilder,
@@ -26,6 +27,7 @@ class TrackListSection extends StatelessWidget {
 
   final String title;
   final String? subtitle;
+  final Widget? subtitleWidget;
   final Widget? trailing;
   final int? itemCount;
   final IndexedWidgetBuilder? itemBuilder;
@@ -73,6 +75,7 @@ class TrackListSection extends StatelessWidget {
           child: PageHeader(
             title: title,
             subtitle: subtitle,
+            subtitleWidget: subtitleWidget,
             trailing: trailing,
           ),
         ),

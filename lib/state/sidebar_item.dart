@@ -53,6 +53,9 @@ enum SidebarItem {
 
   /// Playlists section.
   playlists,
+
+  /// Last.fm recommendations.
+  recommendations,
 }
 
 extension SidebarItemMetadata on SidebarItem {
@@ -95,6 +98,8 @@ extension SidebarItemMetadata on SidebarItem {
         return 'queue';
       case SidebarItem.playlists:
         return 'playlists';
+      case SidebarItem.recommendations:
+        return 'recommendations';
     }
   }
 
@@ -137,6 +142,8 @@ extension SidebarItemMetadata on SidebarItem {
         return 'Queue';
       case SidebarItem.playlists:
         return 'Playlists';
+      case SidebarItem.recommendations:
+        return 'Recommendations';
     }
   }
 }

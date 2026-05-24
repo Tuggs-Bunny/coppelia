@@ -313,6 +313,14 @@ extension AppStatePreferencesExtension on AppState {
     return _cacheStore.getPinnedMediaBytes(_pinnedAudio);
   }
 
+  /// Updates the Last.fm API key.
+  Future<void> setLastFmApiKey(String key) async {
+    await _savePreference(
+      apply: () => _lastFmApiKey = key.trim(),
+      persist: () => _settingsStore.saveLastFmApiKey(key.trim()),
+    );
+  }
+
   /// Updates the cache size limit.
   Future<void> setCacheMaxBytes(int bytes) async {
     _cacheMaxBytes = bytes;

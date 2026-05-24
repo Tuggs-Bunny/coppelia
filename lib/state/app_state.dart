@@ -31,6 +31,7 @@ import '../services/log_service.dart';
 import '../services/now_playing_service.dart';
 import '../services/playback_controller.dart';
 import '../services/search_service.dart';
+import '../services/lastfm_service.dart';
 import '../services/settings_store.dart';
 import '../services/session_store.dart';
 import 'browse_layout.dart';
@@ -79,6 +80,7 @@ class AppState extends ChangeNotifier {
   final JellyfinClient _client;
   final PlaybackController _playback;
   final NowPlayingService _nowPlayingService = NowPlayingService();
+  final RecommendationEngine _recommendationEngine = RecommendationEngine();
   final SessionStore _sessionStore;
   final SettingsStore _settingsStore;
 
@@ -364,6 +366,8 @@ class AppState extends ChangeNotifier {
   int _cacheMaxBytes = CacheStore.defaultCacheMaxBytes;
   bool _offlineMode = false;
   bool _offlineOnlyFilter = false;
+  String? _lastFmApiKey;
+  bool _isRecommendationsFetching = false;
 
   StreamSubscription<Duration?>? _durationSubscription;
   StreamSubscription<PlayerState>? _playerStateSubscription;
@@ -718,6 +722,15 @@ class AppState extends ChangeNotifier {
 
   /// True when offline mode is enabled.
   bool get offlineMode => _offlineMode;
+
+  /// Stored Last.fm API key, if configured.
+  String? get lastFmApiKey => _lastFmApiKey;
+
+  /// The session-scoped recommendation engine.
+  RecommendationEngine get recommendationEngine => _recommendationEngine;
+
+  /// True while the engine is fetching recommendations for a new track.
+  bool get isRecommendationsFetching => _isRecommendationsFetching;
 
   /// True when the offline-only filter is active.
   bool get offlineOnlyFilter => _offlineMode || _offlineOnlyFilter;
@@ -1355,6 +1368,9 @@ class AppState extends ChangeNotifier {
       );
     }
     _nowPlaying = track;
+    if (_lastFmApiKey != null && _lastFmApiKey!.isNotEmpty) {
+      unawaited(_fetchRecommendationsForTrack(track));
+    }
     _updatePlaybackProgress(position: Duration.zero);
     if (track.duration > Duration.zero) {
       _updatePlaybackProgress(duration: track.duration);
@@ -1376,6 +1392,37 @@ class AppState extends ChangeNotifier {
     _updateNowPlayingInfo(force: true);
     if (notify) {
       notifyListeners();
+    }
+  }
+
+  Future<void> _fetchRecommendationsForTrack(MediaItem track) async {
+    final apiKey = _lastFmApiKey;
+    if (apiKey == null || apiKey.isEmpty) return;
+    final artistName = track.artists.isNotEmpty ? track.artists.first : '';
+    if (artistName.isEmpty) return;
+    _isRecommendationsFetching = true;
+    notifyListeners();
+    try {
+      await _recommendationEngine.addTrack(
+        apiKey: apiKey,
+        trackTitle: track.title,
+        artistName: artistName,
+      );
+    } catch (_) {
+      // Silently ignore recommendation fetch failures.
+    } finally {
+      _isRecommendationsFetching = false;
+      notifyListeners();
+    }
+  }
+
+  /// Clears the recommendation session and re-fetches for the current track.
+  Future<void> clearRecommendations() async {
+    _recommendationEngine.clear();
+    notifyListeners();
+    final track = _nowPlaying;
+    if (track != null) {
+      await _fetchRecommendationsForTrack(track);
     }
   }
 

@@ -64,6 +64,7 @@ class SettingsStore {
   static const _offlineModeKey = 'settings_offline_mode';
   static const _preferLocalSearchKey = 'settings_prefer_local_search';
   static const _smartListsKey = 'settings_smart_lists';
+  static const _lastFmApiKeyKey = 'settings_lastfm_api_key';
   static const int _defaultAccentValue = 0xFF6F7BFF;
 
   /// Loads the preferred theme mode.
@@ -221,6 +222,22 @@ class SettingsStore {
     } catch (_) {
       return [];
     }
+  }
+
+  /// Loads the stored Last.fm API key.
+  Future<String?> loadLastFmApiKey() async {
+    final preferences = await SharedPreferences.getInstance();
+    final raw = preferences.getString(_lastFmApiKeyKey);
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+    return raw;
+  }
+
+  /// Saves the Last.fm API key.
+  Future<void> saveLastFmApiKey(String key) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_lastFmApiKeyKey, key);
   }
 
   /// Saves Smart Lists locally.

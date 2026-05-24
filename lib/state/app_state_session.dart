@@ -50,6 +50,7 @@ extension AppStateSessionExtension on AppState {
     _homeShelfLayout = await _settingsStore.loadHomeShelfLayout();
     _homeShelfGridRows = await _settingsStore.loadHomeShelfGridRows();
     _offlineMode = await _settingsStore.loadOfflineMode();
+    _lastFmApiKey = await _settingsStore.loadLastFmApiKey();
     _cacheMaxBytes = await _cacheStore.loadCacheMaxBytes();
     _homeSectionVisibility = await _settingsStore.loadHomeSectionVisibility();
     _homeSectionOrder = await _settingsStore.loadHomeSectionOrder();

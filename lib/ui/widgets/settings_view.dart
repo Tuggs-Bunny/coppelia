@@ -1843,6 +1843,10 @@ class _AccountSettings extends StatelessWidget {
             onChanged: state.setPreferLocalSearch,
           ),
         ),
+        SizedBox(height: space(32)),
+        Text('Integrations', style: Theme.of(context).textTheme.titleMedium),
+        SizedBox(height: space(12)),
+        _LastFmApiKeyField(state: state),
         SizedBox(height: space(16)),
         _SettingRow(
           title: 'Sign out',
@@ -1853,6 +1857,91 @@ class _AccountSettings extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _LastFmApiKeyField extends StatefulWidget {
+  const _LastFmApiKeyField({required this.state});
+
+  final AppState state;
+
+  @override
+  State<_LastFmApiKeyField> createState() => _LastFmApiKeyFieldState();
+}
+
+class _LastFmApiKeyFieldState extends State<_LastFmApiKeyField> {
+  late final TextEditingController _controller;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.state.lastFmApiKey ?? '',
+    );
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _LastFmApiKeyField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.state.lastFmApiKey ?? '';
+    if (!_focusNode.hasFocus && _controller.text != next) {
+      _controller.text = next;
+    }
+  }
+
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus) {
+      _save(_controller.text);
+    }
+  }
+
+  void _save(String value) {
+    widget.state.setLastFmApiKey(value.trim());
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final densityScale = context.watch<AppState>().layoutDensity.scaleDouble;
+    double space(double value) => value * densityScale;
+    return _SettingRow(
+      title: 'Last.fm API key',
+      subtitle:
+          'Used for track recommendations. Get a free key at last.fm/api.',
+      trailing: SizedBox(
+        width: 260,
+        child: TextField(
+          controller: _controller,
+          focusNode: _focusNode,
+          onSubmitted: _save,
+          obscureText: true,
+          decoration: InputDecoration(
+            hintText: 'Paste your API key',
+            filled: true,
+            fillColor: ColorTokens.cardFill(context, 0.06),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                context.scaledRadius(space(12).clamp(8.0, 16.0)),
+              ),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: space(12).clamp(8.0, 16.0),
+              vertical: space(10).clamp(6.0, 14.0),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
