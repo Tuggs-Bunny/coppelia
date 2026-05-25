@@ -1411,10 +1411,34 @@ class AppState extends ChangeNotifier {
               ? previousTrack.artists.first
               : '';
           if (artistName.isNotEmpty) {
+            final completionPct = prevDuration > Duration.zero
+                ? (prevPosition.inMilliseconds /
+                        prevDuration.inMilliseconds)
+                    .clamp(0.0, 1.0)
+                : 0.0;
+            final hour = DateTime.now().hour;
+            final String timeOfDay;
+            if (hour >= 6 && hour < 12) {
+              timeOfDay = 'morning';
+            } else if (hour >= 12 && hour < 18) {
+              timeOfDay = 'afternoon';
+            } else if (hour >= 18 && hour < 22) {
+              timeOfDay = 'evening';
+            } else {
+              timeOfDay = 'late_night';
+            }
             unawaited(_collaborativeService.sendListenEvent(
               hashedUserId: hashedId,
               trackName: previousTrack.title,
               artistName: artistName,
+              genre: previousTrack.genres.isNotEmpty
+                  ? previousTrack.genres.first
+                  : 'Unknown',
+              completionPercentage: completionPct,
+              wasSkipped: profileEvent == PlaybackEvent.skippedAfter45s,
+              wasLoved: isFavoriteTrack(previousTrack.id),
+              wasReplayed: isReplay,
+              timeOfDay: timeOfDay,
             ));
           }
         }

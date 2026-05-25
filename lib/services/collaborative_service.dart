@@ -16,6 +16,12 @@ class CollaborativeService {
     required String hashedUserId,
     required String trackName,
     required String artistName,
+    required String genre,
+    required double completionPercentage,
+    required bool wasSkipped,
+    required bool wasLoved,
+    required bool wasReplayed,
+    required String timeOfDay,
   }) async {
     try {
       await http.post(
@@ -25,6 +31,12 @@ class CollaborativeService {
           'hashed_user_id': hashedUserId,
           'track_name': trackName,
           'artist_name': artistName,
+          'genre': genre,
+          'completion_percentage': completionPercentage,
+          'was_skipped': wasSkipped,
+          'was_loved': wasLoved,
+          'was_replayed': wasReplayed,
+          'time_of_day': timeOfDay,
         }),
       );
     } catch (_) {}
