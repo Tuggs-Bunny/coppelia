@@ -114,6 +114,9 @@ extension AppStateFavoritesExtension on AppState {
 
   /// Updates the favorite status for a track.
   Future<String?> setTrackFavorite(MediaItem track, bool isFavorite) {
+    if (isFavorite) {
+      unawaited(_userProfileService.recordEvent(track, PlaybackEvent.loved));
+    }
     return _setFavoriteState(
       itemId: track.id,
       isFavorite: isFavorite,

@@ -1847,6 +1847,42 @@ class _AccountSettings extends StatelessWidget {
         Text('Integrations', style: Theme.of(context).textTheme.titleMedium),
         SizedBox(height: space(12)),
         _LastFmApiKeyField(state: state),
+        SizedBox(height: space(12)),
+        _SettingRow(
+          title: 'Taste profile',
+          subtitle:
+              'Tracks playback signals to personalise recommendations. '
+              'Clear this to start fresh.',
+          trailing: OutlinedButton(
+            onPressed: () {
+              showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Reset taste profile?'),
+                  content: const Text(
+                    'All learned artist and genre preferences will be cleared. '
+                    'This cannot be undone.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('Reset'),
+                    ),
+                  ],
+                ),
+              ).then((confirmed) {
+                if (confirmed == true) {
+                  state.userProfileService.reset();
+                }
+              });
+            },
+            child: const Text('Reset'),
+          ),
+        ),
         SizedBox(height: space(16)),
         _SettingRow(
           title: 'Sign out',

@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'user_profile_service.dart';
+
 /// A track returned from the Last.fm similar-tracks API.
 class LastFmTrack {
   /// Creates a Last.fm track result.
@@ -35,9 +37,30 @@ class RecommendationEngine {
   /// Tracks fed into the engine this session, in order.
   List<String> get sourceTracks => List.unmodifiable(_sourceTracks);
 
-  /// Returns the top recommendations sorted by cumulative score descending.
-  List<LastFmTrack> getTopRecommendations({int limit = 50}) {
-    final sorted = _scores.entries.toList()
+  /// Returns the top recommendations sorted by adjusted score descending.
+  ///
+  /// When [userProfile] is provided, each track's raw Last.fm score is boosted
+  /// or suppressed by the profile's artist weight, with the current time-vector
+  /// weight applied as a half-strength secondary signal.
+  List<LastFmTrack> getTopRecommendations({
+    int limit = 50,
+    UserProfileService? userProfile,
+  }) {
+    final timeArtists = userProfile?.getTimeVector()['artists'] ?? const {};
+
+    final adjusted = <String, double>{};
+    for (final entry in _scores.entries) {
+      final track = _representative[entry.key];
+      if (track == null) continue;
+      var score = entry.value;
+      if (userProfile != null) {
+        score += userProfile.getArtistWeight(track.artist);
+        score += (timeArtists[track.artist] ?? 0.0) * 0.5;
+      }
+      adjusted[entry.key] = score;
+    }
+
+    final sorted = adjusted.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     return sorted.take(limit).map((entry) {
       final t = _representative[entry.key]!;
@@ -45,7 +68,7 @@ class RecommendationEngine {
         title: t.title,
         artist: t.artist,
         url: t.url,
-        match: entry.value,
+        match: adjusted[entry.key]!,
       );
     }).toList();
   }

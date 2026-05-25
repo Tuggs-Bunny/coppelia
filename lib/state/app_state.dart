@@ -7,7 +7,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:just_audio/just_audio.dart' hide PlaybackEvent;
 import 'package:palette_generator/palette_generator.dart';
 
 import '../core/app_palette.dart';
@@ -25,6 +25,7 @@ import '../models/playlist.dart';
 import '../models/search_results.dart';
 import '../models/smart_list.dart';
 import '../models/track_status_icon_state.dart';
+import '../models/playback_event.dart';
 import '../services/cache_store.dart';
 import '../services/jellyfin_client.dart';
 import '../services/log_service.dart';
@@ -34,6 +35,7 @@ import '../services/search_service.dart';
 import '../services/lastfm_service.dart';
 import '../services/settings_store.dart';
 import '../services/session_store.dart';
+import '../services/user_profile_service.dart';
 import 'browse_layout.dart';
 import 'accent_color_source.dart';
 import 'home_section.dart';
@@ -74,6 +76,7 @@ class AppState extends ChangeNotifier {
         _settingsStore = settingsStore {
     _bindPlayback();
     _bindNowPlaying();
+    unawaited(_userProfileService.init());
   }
 
   final CacheStore _cacheStore;
@@ -81,6 +84,7 @@ class AppState extends ChangeNotifier {
   final PlaybackController _playback;
   final NowPlayingService _nowPlayingService = NowPlayingService();
   final RecommendationEngine _recommendationEngine = RecommendationEngine();
+  final UserProfileService _userProfileService = UserProfileService();
   final SessionStore _sessionStore;
   final SettingsStore _settingsStore;
 
@@ -729,6 +733,9 @@ class AppState extends ChangeNotifier {
   /// The session-scoped recommendation engine.
   RecommendationEngine get recommendationEngine => _recommendationEngine;
 
+  /// The persistent user taste profile service.
+  UserProfileService get userProfileService => _userProfileService;
+
   /// True while the engine is fetching recommendations for a new track.
   bool get isRecommendationsFetching => _isRecommendationsFetching;
 
@@ -1360,6 +1367,24 @@ class AppState extends ChangeNotifier {
     }
     final previousTrack = _nowPlaying;
     final previousSession = _playSessionId;
+    if (previousTrack != null && _activeSessionHasPlayed) {
+      final prevPosition = _position;
+      final prevDuration =
+          _duration == Duration.zero ? previousTrack.duration : _duration;
+      final isReplay = forceRestart && track.id == previousTrack.id;
+      final PlaybackEvent profileEvent;
+      if (isReplay) {
+        profileEvent = PlaybackEvent.replayed;
+      } else if (prevDuration > Duration.zero &&
+          prevPosition.inMilliseconds / prevDuration.inMilliseconds > 0.8) {
+        profileEvent = PlaybackEvent.completedOver80;
+      } else if (prevPosition.inSeconds >= 45) {
+        profileEvent = PlaybackEvent.skippedAfter45s;
+      } else {
+        profileEvent = PlaybackEvent.skippedBefore45s;
+      }
+      unawaited(_userProfileService.recordEvent(previousTrack, profileEvent));
+    }
     if (_activeSessionHasPlayed) {
       _maybeReportStoppedForSession(
         track: previousTrack,

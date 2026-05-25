@@ -36,7 +36,9 @@ class RecommendationsView extends StatelessWidget {
     }
 
     final isFetching = state.isRecommendationsFetching;
-    final tracks = state.recommendationEngine.getTopRecommendations();
+    final tracks = state.recommendationEngine.getTopRecommendations(
+      userProfile: state.userProfileService,
+    );
     final sourceTracks = state.recommendationEngine.sourceTracks;
     final subtitleText = sourceTracks.isEmpty
         ? 'Play some music to get started'
