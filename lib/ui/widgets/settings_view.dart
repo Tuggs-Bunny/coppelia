@@ -1883,6 +1883,93 @@ class _AccountSettings extends StatelessWidget {
             child: const Text('Reset'),
           ),
         ),
+        SizedBox(height: space(20)),
+        const _SettingsSubheader(title: 'Community recommendations'),
+        SizedBox(height: space(12)),
+        _SettingRow(
+          title: 'Share listening anonymously',
+          subtitle:
+              'Anonymously share what you listen to and get recommendations '
+              'from other users. Your Jellyfin user ID is hashed on-device '
+              'before anything is sent. Only track name and artist are ever '
+              'transmitted.',
+          trailing: CompactSwitch(
+            value: state.collaborativeOptIn,
+            onChanged: (value) {
+              if (value) {
+                showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Enable community recommendations?'),
+                    content: const Text(
+                      'When enabled, Coppelia will anonymously send the track '
+                      'name and artist of what you listen to a community server '
+                      'at api.spacemonkeys.online. Your Jellyfin user ID is '
+                      'hashed on-device — the raw ID is never transmitted. '
+                      'You can delete all your data at any time.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        child: const Text('Enable'),
+                      ),
+                    ],
+                  ),
+                ).then((confirmed) {
+                  if (confirmed == true) {
+                    state.setCollaborativeOptIn(true);
+                  }
+                });
+              } else {
+                state.setCollaborativeOptIn(false);
+              }
+            },
+          ),
+        ),
+        SizedBox(height: space(12)),
+        _SettingRow(
+          title: 'Delete my data',
+          subtitle: 'Remove all listening data from the community server.',
+          trailing: OutlinedButton(
+            onPressed: () {
+              final session = state.session;
+              if (session == null) return;
+              final hashedId =
+                  state.identityService.getHashedUserId(session.userId);
+              showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Delete community data?'),
+                  content: const Text(
+                    'All your listening history on the community server will '
+                    'be permanently deleted. This cannot be undone.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              ).then((confirmed) {
+                if (confirmed == true) {
+                  state.collaborativeService
+                      .deleteUserData(hashedId)
+                      .ignore();
+                }
+              });
+            },
+            child: const Text('Delete'),
+          ),
+        ),
         SizedBox(height: space(16)),
         _SettingRow(
           title: 'Sign out',

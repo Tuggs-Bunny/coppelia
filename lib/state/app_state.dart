@@ -32,6 +32,8 @@ import '../services/log_service.dart';
 import '../services/now_playing_service.dart';
 import '../services/playback_controller.dart';
 import '../services/search_service.dart';
+import '../services/collaborative_service.dart';
+import '../services/identity_service.dart';
 import '../services/lastfm_service.dart';
 import '../services/settings_store.dart';
 import '../services/session_store.dart';
@@ -85,6 +87,8 @@ class AppState extends ChangeNotifier {
   final NowPlayingService _nowPlayingService = NowPlayingService();
   final RecommendationEngine _recommendationEngine = RecommendationEngine();
   final UserProfileService _userProfileService = UserProfileService();
+  final CollaborativeService _collaborativeService = const CollaborativeService();
+  final IdentityService _identityService = const IdentityService();
   final SessionStore _sessionStore;
   final SettingsStore _settingsStore;
 
@@ -371,7 +375,9 @@ class AppState extends ChangeNotifier {
   bool _offlineMode = false;
   bool _offlineOnlyFilter = false;
   String? _lastFmApiKey;
+  bool _collaborativeOptIn = false;
   bool _isRecommendationsFetching = false;
+  List<LastFmTrack> _collaborativeRecommendations = [];
 
   StreamSubscription<Duration?>? _durationSubscription;
   StreamSubscription<PlayerState>? _playerStateSubscription;
@@ -735,6 +741,19 @@ class AppState extends ChangeNotifier {
 
   /// The persistent user taste profile service.
   UserProfileService get userProfileService => _userProfileService;
+
+  /// The collaborative recommendation service.
+  CollaborativeService get collaborativeService => _collaborativeService;
+
+  /// The anonymous identity service.
+  IdentityService get identityService => _identityService;
+
+  /// True when collaborative community recommendations are enabled.
+  bool get collaborativeOptIn => _collaborativeOptIn;
+
+  /// Latest collaborative recommendations fetched this session.
+  List<LastFmTrack> get collaborativeRecommendations =>
+      List.unmodifiable(_collaborativeRecommendations);
 
   /// True while the engine is fetching recommendations for a new track.
   bool get isRecommendationsFetching => _isRecommendationsFetching;
@@ -1384,6 +1403,22 @@ class AppState extends ChangeNotifier {
         profileEvent = PlaybackEvent.skippedBefore45s;
       }
       unawaited(_userProfileService.recordEvent(previousTrack, profileEvent));
+      if (_collaborativeOptIn && prevPosition.inSeconds >= 45) {
+        final userId = _session?.userId;
+        if (userId != null) {
+          final hashedId = _identityService.getHashedUserId(userId);
+          final artistName = previousTrack.artists.isNotEmpty
+              ? previousTrack.artists.first
+              : '';
+          if (artistName.isNotEmpty) {
+            unawaited(_collaborativeService.sendListenEvent(
+              hashedUserId: hashedId,
+              trackName: previousTrack.title,
+              artistName: artistName,
+            ));
+          }
+        }
+      }
     }
     if (_activeSessionHasPlayed) {
       _maybeReportStoppedForSession(
@@ -1428,11 +1463,25 @@ class AppState extends ChangeNotifier {
     _isRecommendationsFetching = true;
     notifyListeners();
     try {
-      await _recommendationEngine.addTrack(
-        apiKey: apiKey,
-        trackTitle: track.title,
-        artistName: artistName,
-      );
+      final futures = <Future>[
+        _recommendationEngine.addTrack(
+          apiKey: apiKey,
+          trackTitle: track.title,
+          artistName: artistName,
+        ),
+      ];
+      if (_collaborativeOptIn) {
+        final userId = _session?.userId;
+        if (userId != null) {
+          final hashedId = _identityService.getHashedUserId(userId);
+          futures.add(
+            _collaborativeService
+                .getRecommendations(hashedId)
+                .then((results) => _collaborativeRecommendations = results),
+          );
+        }
+      }
+      await Future.wait(futures);
     } catch (_) {
       // Silently ignore recommendation fetch failures.
     } finally {
@@ -1444,11 +1493,19 @@ class AppState extends ChangeNotifier {
   /// Clears the recommendation session and re-fetches for the current track.
   Future<void> clearRecommendations() async {
     _recommendationEngine.clear();
+    _collaborativeRecommendations = [];
     notifyListeners();
     final track = _nowPlaying;
     if (track != null) {
       await _fetchRecommendationsForTrack(track);
     }
+  }
+
+  /// Updates the collaborative opt-in preference.
+  Future<void> setCollaborativeOptIn(bool enabled) async {
+    _collaborativeOptIn = enabled;
+    await _settingsStore.saveCollaborativeOptIn(enabled);
+    _notify();
   }
 
   void _updateNowPlayingInfo({bool force = false}) {

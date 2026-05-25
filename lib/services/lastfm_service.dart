@@ -42,13 +42,19 @@ class RecommendationEngine {
   /// When [userProfile] is provided, each track's raw Last.fm score is boosted
   /// or suppressed by the profile's artist weight, with the current time-vector
   /// weight applied as a half-strength secondary signal.
+  ///
+  /// When [collaborativeResults] is provided, those scores are merged in at
+  /// 10% weight before sorting.
   List<LastFmTrack> getTopRecommendations({
     int limit = 50,
     UserProfileService? userProfile,
+    List<LastFmTrack>? collaborativeResults,
   }) {
     final timeArtists = userProfile?.getTimeVector()['artists'] ?? const {};
 
+    final allTracks = Map<String, LastFmTrack>.from(_representative);
     final adjusted = <String, double>{};
+
     for (final entry in _scores.entries) {
       final track = _representative[entry.key];
       if (track == null) continue;
@@ -60,10 +66,19 @@ class RecommendationEngine {
       adjusted[entry.key] = score;
     }
 
+    if (collaborativeResults != null) {
+      for (final track in collaborativeResults) {
+        final key =
+            '${track.artist.toLowerCase()} - ${track.title.toLowerCase()}';
+        adjusted[key] = (adjusted[key] ?? 0.0) + track.match * 0.1;
+        allTracks[key] ??= track;
+      }
+    }
+
     final sorted = adjusted.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     return sorted.take(limit).map((entry) {
-      final t = _representative[entry.key]!;
+      final t = allTracks[entry.key]!;
       return LastFmTrack(
         title: t.title,
         artist: t.artist,

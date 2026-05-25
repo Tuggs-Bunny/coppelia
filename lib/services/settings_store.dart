@@ -65,6 +65,7 @@ class SettingsStore {
   static const _preferLocalSearchKey = 'settings_prefer_local_search';
   static const _smartListsKey = 'settings_smart_lists';
   static const _lastFmApiKeyKey = 'settings_lastfm_api_key';
+  static const _collaborativeOptInKey = 'settings_collaborative_opt_in';
   static const int _defaultAccentValue = 0xFF6F7BFF;
 
   /// Loads the preferred theme mode.
@@ -238,6 +239,18 @@ class SettingsStore {
   Future<void> saveLastFmApiKey(String key) async {
     final preferences = await SharedPreferences.getInstance();
     await preferences.setString(_lastFmApiKeyKey, key);
+  }
+
+  /// Loads whether community recommendations opt-in is enabled.
+  Future<bool> loadCollaborativeOptIn() async {
+    final preferences = await SharedPreferences.getInstance();
+    return preferences.getBool(_collaborativeOptInKey) ?? false;
+  }
+
+  /// Saves whether community recommendations opt-in is enabled.
+  Future<void> saveCollaborativeOptIn(bool enabled) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(_collaborativeOptInKey, enabled);
   }
 
   /// Saves Smart Lists locally.

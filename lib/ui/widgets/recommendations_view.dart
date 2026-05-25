@@ -38,6 +38,9 @@ class RecommendationsView extends StatelessWidget {
     final isFetching = state.isRecommendationsFetching;
     final tracks = state.recommendationEngine.getTopRecommendations(
       userProfile: state.userProfileService,
+      collaborativeResults: state.collaborativeOptIn
+          ? state.collaborativeRecommendations
+          : null,
     );
     final sourceTracks = state.recommendationEngine.sourceTracks;
     final subtitleText = sourceTracks.isEmpty
